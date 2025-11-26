@@ -76,6 +76,7 @@ export function createCardBrowser(serviceName, cards, state, extensionName, exte
     const nsfwText = hideNsfw ? ' (after hiding NSFW)' : '';
     const cardCountText = `${cardsWithImages.length} card${cardsWithImages.length !== 1 ? 's' : ''} found${nsfwText}`;
     const isChubSource = serviceName === 'chub';
+    console.log('[Bot Browser] Creating browser header - serviceName:', serviceName, 'isChubSource:', isChubSource, 'currentSort:', state.sortBy);
     menuContent.innerHTML = createBrowserHeader(serviceDisplayName, state.filters.search, cardCountText, searchCollapsed, hideNsfw, isChubSource, state.sortBy);
 
     // Update filter dropdowns

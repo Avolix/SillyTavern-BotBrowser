@@ -123,6 +123,8 @@ export function getOriginalMenuHTML(recentlyViewed) {
 }
 
 export function createBrowserHeader(serviceDisplayName, searchValue, cardCountText, searchCollapsed = false, hideNsfw = false, isChubSource = false, currentSort = 'relevance') {
+    console.log('[Bot Browser Template] createBrowserHeader called - isChubSource:', isChubSource, 'currentSort:', currentSort);
+    
     // Build sort options based on source
     const baseSortOptions = [
         { value: 'relevance', label: 'Relevance' },
