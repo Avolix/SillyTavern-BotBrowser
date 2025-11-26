@@ -238,11 +238,17 @@ function setupBrowserEventListeners(menuContent, state, extensionName, extension
     document.addEventListener('click', closeDropdowns, true);
 
     const searchInput = menuContent.querySelector('.bot-browser-search-input');
-    searchInput.addEventListener('input', debounce((e) => {
+    searchInput.addEventListener('input', debounce(async (e) => {
         state.filters.search = e.target.value;
         savePersistentSearch(extensionName, extension_settings, state.currentService, state.filters, state.sortBy);
-        refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
-    }, 300));
+        
+        // For Chub, use API search when query is present and using an API-level sort
+        if (state.currentService === 'chub' && state.filters.search.length >= 2) {
+            await handleChubApiSearch(state, state.filters.search, extensionName, extension_settings, showCardDetailFunc);
+        } else {
+            refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+        }
+    }, 500));
 
     // Custom Tag Filter Logic
     setupCustomDropdown(
@@ -433,6 +439,88 @@ function setupCustomDropdown(container, state, filterType, extensionName, extens
 
 
 
+
+// Handle Chub API search - sends query directly to Chub API
+async function handleChubApiSearch(state, searchQuery, extensionName, extension_settings, showCardDetailFunc) {
+    const menuContent = document.querySelector('.bot-browser-content');
+    const countContainer = document.querySelector('.bot-browser-results-count');
+    const gridContainer = menuContent?.querySelector('.bot-browser-card-grid');
+
+    // Show loading state
+    if (countContainer) {
+        countContainer.textContent = 'Searching Chub...';
+    }
+    if (gridContainer) {
+        gridContainer.innerHTML = '<div class="bot-browser-loading"><i class="fa-solid fa-spinner fa-spin"></i> Searching Chub API...</div>';
+    }
+
+    try {
+        // Fetch cards from Chub API with search query
+        const hideNsfw = extension_settings[extensionName].hideNsfw || false;
+        const result = await fetchChubCards({
+            sort: isChubApiSort(state.sortBy) ? state.sortBy : 'default',
+            first: 200,
+            search: searchQuery,
+            nsfw: !hideNsfw
+        });
+
+        console.log(`[Bot Browser] Searched Chub API for "${searchQuery}", found ${result.cards.length} results`);
+
+        // Update state with new cards
+        const cardsWithSource = result.cards.map(card => ({
+            ...card,
+            sourceService: 'chub'
+        }));
+        state.currentCards = deduplicateCards(cardsWithSource);
+
+        // Rebuild Fuse.js index for the new cards
+        const fuseOptions = {
+            keys: [
+                { name: 'name', weight: 3 },
+                { name: 'creator', weight: 2 },
+                { name: 'desc_search', weight: 1.5 },
+                { name: 'desc_preview', weight: 1 },
+                { name: 'tags', weight: 1.5 }
+            ],
+            threshold: extension_settings[extensionName].fuzzySearchThreshold || 0.4,
+            distance: 100,
+            minMatchCharLength: 2,
+            ignoreLocation: true,
+            useExtendedSearch: true
+        };
+        state.fuse = new Fuse(state.currentCards, fuseOptions);
+
+        // Reset search filter since the API already filtered
+        const originalSearch = state.filters.search;
+        state.filters.search = '';
+
+        // Now refresh the grid with the new data
+        refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+
+        // Restore search filter in state (for display purposes)
+        state.filters.search = originalSearch;
+
+        // Update the filter dropdowns with new tags/creators
+        const allTags = getAllTags(state.currentCards);
+        const allCreators = getAllCreators(state.currentCards);
+        if (menuContent) {
+            updateFilterDropdowns(menuContent, allTags, allCreators, state);
+        }
+
+        // Show API search indicator
+        if (countContainer) {
+            const hideNsfwText = hideNsfw ? ' (NSFW hidden)' : '';
+            countContainer.textContent = `${result.cards.length} results from Chub API for "${searchQuery}"${hideNsfwText}`;
+        }
+
+    } catch (error) {
+        console.error('[Bot Browser] Error searching Chub API:', error);
+        toastr.error('Failed to search Chub API. Using local search.');
+
+        // Fall back to local search
+        refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+    }
+}
 
 // Handle Chub API-level sorting by fetching new data
 async function handleChubApiSort(state, sortBy, extensionName, extension_settings, showCardDetailFunc) {

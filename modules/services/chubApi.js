@@ -29,6 +29,7 @@ const SORT_MAP = {
  * @param {string} options.search - Search query (optional)
  * @param {string} options.cursor - Pagination cursor (optional)
  * @param {boolean} options.nsfw - Include NSFW content (default true)
+ * @param {boolean} options.includeAll - Include all content types
  * @returns {Promise<{cards: Array, cursor: string|null, count: number}>}
  */
 export async function fetchChubCards(options = {}) {
@@ -37,7 +38,8 @@ export async function fetchChubCards(options = {}) {
         first = 200,
         search = '',
         cursor = null,
-        nsfw = true
+        nsfw = true,
+        includeAll = true
     } = options;
 
     try {
@@ -57,16 +59,27 @@ export async function fetchChubCards(options = {}) {
             params.append('cursor', cursor);
         }
 
-        // NSFW content parameters
-        // venus=true explicitly requests Venus (NSFW) content
-        // nsfw=true is another common parameter
+        // NSFW content parameters - comprehensive approach
+        // Chub has multiple NSFW-related flags that need to be set properly
         if (nsfw) {
+            // Venus is Chub's NSFW platform
             params.append('venus', 'true');
+            // Standard NSFW flags
             params.append('nsfw', 'true');
             params.append('nsfw_ok', 'true');
+            // Additional flags to ensure NSFW content is included
+            params.append('require_images', 'false');
+            params.append('require_custom_prompt', 'false');
+            params.append('require_lore', 'false');
+            params.append('require_expressions', 'false');
+            // Don't exclude NSFW
+            params.append('exclude_venus', 'false');
+            // Include all ratings
+            params.append('asc', 'false');
         } else {
             params.append('venus', 'false');
             params.append('nsfw', 'false');
+            params.append('exclude_venus', 'true');
         }
 
         const url = `${CHUB_API_BASE}/search?${params.toString()}`;
