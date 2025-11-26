@@ -51,6 +51,36 @@ export async function importCardToSillyTavern(card, extensionName, extension_set
     }
 }
 
+// Import Chub character using importURL endpoint
+async function importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders) {
+    console.log('[Bot Browser] Importing Chub character via importURL:', card.id);
+
+    const request = await fetch('/api/content/importURL', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ url: card.id }),
+    });
+
+    if (!request.ok) {
+        const errorText = await request.text();
+        console.error('[Bot Browser] importURL failed:', request.status, errorText);
+        throw new Error(`Failed to import character: ${request.statusText}`);
+    }
+
+    const result = await request.json();
+    
+    if (result.error) {
+        console.error('[Bot Browser] Import error:', result.error);
+        throw new Error(`Server returned an error: ${result.error}`);
+    }
+
+    toastr.success(`${card.name} imported successfully!`, '', { timeOut: 2000 });
+    console.log('[Bot Browser] ✓ Chub character imported via importURL');
+
+    // Track import
+    return trackImport(extensionName, extension_settings, importStats, card, 'character');
+}
+
 // Import lorebook
 async function importLorebook(card, extensionName, extension_settings, importStats, getRequestHeaders) {
     const request = await fetch('/api/content/importURL', {
@@ -85,6 +115,12 @@ async function importLorebook(card, extensionName, extension_settings, importSta
 
 // Import character
 async function importCharacter(card, extensionName, extension_settings, importStats, processDroppedFiles, getRequestHeaders) {
+    // For Chub cards (from API), use the importURL endpoint
+    if ((card.service === 'chub' || card.sourceService === 'chub') && card.id && card.id.includes('chub.ai/characters/')) {
+        console.log('[Bot Browser] Using importURL for Chub character:', card.id);
+        return await importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders);
+    }
+
     // Determine which URL to use based on service
     let imageUrl;
 
@@ -92,12 +128,7 @@ async function importCharacter(card, extensionName, extension_settings, importSt
     if (card.service === 'risuai_realm' || card.sourceService === 'risuai_realm') {
         imageUrl = card.image_url;
     }
-    // For Chub cards and cards with Chub avatars, prioritize avatar_url
-    else if (card.service === 'chub' || card.sourceService === 'chub' ||
-             (card.avatar_url && (card.avatar_url.includes('charhub.io') || card.avatar_url.includes('characterhub.org') || card.avatar_url.includes('avatars.charhub.io')))) {
-        imageUrl = card.avatar_url || card.image_url;
-    }
-    // For all other services, use avatar_url first
+    // For other services, use avatar_url first
     else {
         imageUrl = card.avatar_url || card.image_url;
     }

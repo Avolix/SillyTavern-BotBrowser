@@ -127,6 +127,13 @@ function transformChubCard(node) {
     const topicsLower = topics.map(t => t.toLowerCase());
     const possibleNsfw = topicsLower.some(t => nsfwKeywords.some(kw => t.includes(kw)));
 
+    // Construct proper avatar URL from fullPath
+    // Chub avatar URLs follow the pattern: https://avatars.charhub.io/avatars/{creator}/{charname}/avatar.webp
+    let avatarUrl = node.avatar_url || node.max_res_url || '';
+    if (!avatarUrl && node.fullPath) {
+        avatarUrl = `https://avatars.charhub.io/avatars/${node.fullPath}/avatar.webp`;
+    }
+
     return {
         id: node.fullPath ? `https://chub.ai/characters/${node.fullPath}` : `chub-${node.id}`,
         service: 'chub',
@@ -136,7 +143,7 @@ function transformChubCard(node) {
         tags: topics,
         creator: node.fullPath ? node.fullPath.split('/')[0] : 'Unknown',
         image_url: `https://chub.ai/characters/${node.fullPath}`,
-        avatar_url: node.avatar_url || node.max_res_url || '',
+        avatar_url: avatarUrl,
         possibleNsfw: possibleNsfw || node.nsfw_image || false,
         // Additional metadata from API (useful for display)
         _chubMeta: {
