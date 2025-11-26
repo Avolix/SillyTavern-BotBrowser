@@ -57,9 +57,16 @@ export async function fetchChubCards(options = {}) {
             params.append('cursor', cursor);
         }
 
-        // NSFW filter (venus=true includes NSFW, venus=false excludes)
-        if (!nsfw) {
+        // NSFW content parameters
+        // venus=true explicitly requests Venus (NSFW) content
+        // nsfw=true is another common parameter
+        if (nsfw) {
+            params.append('venus', 'true');
+            params.append('nsfw', 'true');
+            params.append('nsfw_ok', 'true');
+        } else {
             params.append('venus', 'false');
+            params.append('nsfw', 'false');
         }
 
         const url = `${CHUB_API_BASE}/search?${params.toString()}`;
