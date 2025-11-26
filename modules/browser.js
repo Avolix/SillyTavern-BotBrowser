@@ -6,6 +6,7 @@ import { loadPersistentSearch, savePersistentSearch, loadSearchCollapsed, saveSe
 import { fetchChubCards } from './services/chubApi.js';
 
 export function createCardBrowser(serviceName, cards, state, extensionName, extension_settings, showCardDetailFunc) {
+    console.log('[Bot Browser DEBUG v2] createCardBrowser START - serviceName:', serviceName);
     state.view = 'browser';
     state.currentService = serviceName;
 
@@ -88,7 +89,7 @@ export function createCardBrowser(serviceName, cards, state, extensionName, exte
     // Add event listeners
     setupBrowserEventListeners(menuContent, state, extensionName, extension_settings, showCardDetailFunc);
 
-    console.log('[Bot Browser] Card browser created with', sortedCards.length, 'cards');
+    console.log('[Bot Browser v2.1] Card browser created with', sortedCards.length, 'cards, isChubSource=', serviceName === 'chub');
 }
 
 // Update filter dropdowns
