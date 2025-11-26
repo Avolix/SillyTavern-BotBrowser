@@ -6,7 +6,7 @@ import { loadImportStats, saveImportStats, loadRecentlyViewed } from './modules/
 import { getTimeAgo } from './modules/storage/stats.js';
 import { loadServiceIndex, initializeServiceCache } from './modules/services/cache.js';
 import { getRandomCard, isApiLevelSort } from './modules/services/cards.js';
-import { fetchChubCards } from './modules/services/chubApi.js';
+import { fetchChubCards, saveChubToken, getChubToken, hasChubToken, clearChubToken } from './modules/services/chubApi.js';
 import { importCardToSillyTavern } from './modules/services/import.js';
 import { showCardDetail, closeDetailModal, showImageLightbox } from './modules/modals/detail.js';
 import { createCardBrowser, refreshCardGrid } from './modules/browser.js';
@@ -545,6 +545,50 @@ function showSettingsModal() {
                     <small style="color: rgba(255,255,255,0.6); display: block; margin-top: 5px;">Cards with these tags or terms in their name/description will be hidden. Enter one term per line (case-insensitive).</small>
                 </div>
             </div>
+
+            <div class="bot-browser-settings-section">
+                <h3><i class="fa-solid fa-key"></i> Chub Integration</h3>
+
+                <div style="margin-bottom: 15px; padding: 12px; background: rgba(100, 150, 255, 0.1); border: 1px solid rgba(100, 150, 255, 0.3); border-radius: 6px;">
+                    <small style="color: rgba(200, 220, 255, 0.9); display: block; line-height: 1.5;">
+                        <i class="fa-solid fa-info-circle" style="margin-right: 5px;"></i>
+                        <strong>About Chub API Token:</strong><br>
+                        Adding your Chub API token allows you to access NSFW content in trending/recent sorts (when logged in, Chub shows more results).
+                        <br><br>
+                        To get your token:<br>
+                        1. Log in to <a href="https://chub.ai" target="_blank" style="color: rgba(150, 200, 255, 1);">chub.ai</a><br>
+                        2. Open browser DevTools (F12)<br>
+                        3. Go to Application → Cookies → chub.ai<br>
+                        4. Copy the value of the <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">__Secure-next-auth.session-token</code> cookie
+                    </small>
+                </div>
+
+                <div class="bot-browser-setting-group">
+                    <label for="bb-setting-chub-token" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.9); font-weight: 500;">
+                        Chub API Token
+                    </label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="password" id="bb-setting-chub-token" class="text_pole" style="flex: 1; font-family: monospace;" placeholder="Paste your session token here..." value="${getChubToken() || ''}">
+                        <button id="bb-toggle-token-visibility" class="menu_button" style="padding: 8px 12px;" title="Show/Hide Token">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button id="bb-save-chub-token" class="bot-browser-action-button" style="background: rgba(100, 200, 100, 0.2); border-color: rgba(100, 200, 100, 0.4);">
+                            <i class="fa-solid fa-save"></i> Save Token
+                        </button>
+                        <button id="bb-clear-chub-token" class="bot-browser-action-button">
+                            <i class="fa-solid fa-trash"></i> Clear Token
+                        </button>
+                        <button id="bb-test-chub-token" class="bot-browser-action-button" style="background: rgba(100, 150, 255, 0.2); border-color: rgba(100, 150, 255, 0.4);">
+                            <i class="fa-solid fa-flask"></i> Test Token
+                        </button>
+                    </div>
+                    <div id="bb-chub-token-status" style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; display: ${hasChubToken() ? 'block' : 'none'}; background: rgba(100, 200, 100, 0.15); border: 1px solid rgba(100, 200, 100, 0.3);">
+                        <small style="color: rgba(150, 255, 150, 0.9);"><i class="fa-solid fa-check-circle"></i> Token is set</small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="bot-browser-detail-actions">
@@ -634,6 +678,84 @@ function showSettingsModal() {
             state.filters = { search: '', tags: [], creator: '' };
             state.sortBy = 'relevance';
             toastr.success('Search history cleared');
+        }
+    });
+
+    // Chub token handlers
+    const chubTokenInput = document.getElementById('bb-setting-chub-token');
+    const tokenStatus = document.getElementById('bb-chub-token-status');
+
+    // Toggle token visibility
+    document.getElementById('bb-toggle-token-visibility').addEventListener('click', () => {
+        const icon = document.querySelector('#bb-toggle-token-visibility i');
+        if (chubTokenInput.type === 'password') {
+            chubTokenInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            chubTokenInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    // Save Chub token
+    document.getElementById('bb-save-chub-token').addEventListener('click', () => {
+        const token = chubTokenInput.value.trim();
+        if (token) {
+            saveChubToken(token);
+            tokenStatus.style.display = 'block';
+            tokenStatus.innerHTML = '<small style="color: rgba(150, 255, 150, 0.9);"><i class="fa-solid fa-check-circle"></i> Token saved successfully</small>';
+            toastr.success('Chub API token saved!');
+        } else {
+            toastr.warning('Please enter a token first');
+        }
+    });
+
+    // Clear Chub token
+    document.getElementById('bb-clear-chub-token').addEventListener('click', () => {
+        if (confirm('Clear your Chub API token?')) {
+            clearChubToken();
+            chubTokenInput.value = '';
+            tokenStatus.style.display = 'none';
+            toastr.success('Chub API token cleared');
+        }
+    });
+
+    // Test Chub token
+    document.getElementById('bb-test-chub-token').addEventListener('click', async () => {
+        const token = chubTokenInput.value.trim();
+        if (!token) {
+            toastr.warning('Please enter a token first');
+            return;
+        }
+
+        // Temporarily save the token for testing
+        const originalToken = getChubToken();
+        saveChubToken(token);
+
+        tokenStatus.style.display = 'block';
+        tokenStatus.style.background = 'rgba(100, 150, 255, 0.15)';
+        tokenStatus.style.borderColor = 'rgba(100, 150, 255, 0.3)';
+        tokenStatus.innerHTML = '<small style="color: rgba(150, 200, 255, 0.9);"><i class="fa-solid fa-spinner fa-spin"></i> Testing token...</small>';
+
+        try {
+            const result = await fetchChubCards({ sort: 'trending', first: 5 });
+            tokenStatus.style.background = 'rgba(100, 200, 100, 0.15)';
+            tokenStatus.style.borderColor = 'rgba(100, 200, 100, 0.3)';
+            tokenStatus.innerHTML = `<small style="color: rgba(150, 255, 150, 0.9);"><i class="fa-solid fa-check-circle"></i> Token works! Fetched ${result.cards.length} cards.</small>`;
+            toastr.success('Token is valid and working!');
+        } catch (error) {
+            // Restore original token if test failed
+            if (originalToken) {
+                saveChubToken(originalToken);
+            } else {
+                clearChubToken();
+            }
+            tokenStatus.style.background = 'rgba(255, 100, 100, 0.15)';
+            tokenStatus.style.borderColor = 'rgba(255, 100, 100, 0.3)';
+            tokenStatus.innerHTML = '<small style="color: rgba(255, 150, 150, 0.9);"><i class="fa-solid fa-times-circle"></i> Token test failed. Check if it\'s valid.</small>';
+            toastr.error('Token test failed: ' + error.message);
         }
     });
 

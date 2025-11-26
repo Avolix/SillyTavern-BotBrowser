@@ -1,9 +1,12 @@
 /**
  * Chub API Service
- * Fetches cards directly from Chub's API with sorting support
+ * Fetches cards directly from Chub's API with sorting and authentication support
  */
 
 const CHUB_API_BASE = 'https://api.chub.ai';
+
+// Storage key for Chub API token
+const CHUB_TOKEN_KEY = 'botBrowser_chubApiToken';
 
 // Map our sort options to Chub API sort parameters
 const SORT_MAP = {
@@ -60,9 +63,22 @@ export async function fetchChubCards(options = {}) {
         }
 
         const url = `${CHUB_API_BASE}/search?${params.toString()}`;
-        console.log('[Bot Browser] Fetching from Chub API:', url);
+        
+        // Build request headers
+        const headers = {
+            'Accept': 'application/json',
+        };
+        
+        // Add authentication token if available
+        const token = getChubToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+            console.log('[Bot Browser] Fetching from Chub API (authenticated):', url);
+        } else {
+            console.log('[Bot Browser] Fetching from Chub API (anonymous):', url);
+        }
 
-        const response = await fetch(url);
+        const response = await fetch(url, { headers });
         
         if (!response.ok) {
             throw new Error(`Chub API error: ${response.status} ${response.statusText}`);
@@ -156,4 +172,43 @@ export function getChubSortOptions() {
  */
 export function isChubApiSort(sortBy) {
     return Object.keys(SORT_MAP).includes(sortBy);
+}
+
+/**
+ * Save Chub API token to local storage
+ * @param {string} token - The API token
+ */
+export function saveChubToken(token) {
+    if (token && token.trim()) {
+        localStorage.setItem(CHUB_TOKEN_KEY, token.trim());
+        console.log('[Bot Browser] Chub API token saved');
+    } else {
+        localStorage.removeItem(CHUB_TOKEN_KEY);
+        console.log('[Bot Browser] Chub API token removed');
+    }
+}
+
+/**
+ * Get Chub API token from local storage
+ * @returns {string|null} - The stored token or null
+ */
+export function getChubToken() {
+    return localStorage.getItem(CHUB_TOKEN_KEY);
+}
+
+/**
+ * Check if Chub API token is set
+ * @returns {boolean}
+ */
+export function hasChubToken() {
+    const token = getChubToken();
+    return token !== null && token.trim().length > 0;
+}
+
+/**
+ * Clear Chub API token
+ */
+export function clearChubToken() {
+    localStorage.removeItem(CHUB_TOKEN_KEY);
+    console.log('[Bot Browser] Chub API token cleared');
 }
