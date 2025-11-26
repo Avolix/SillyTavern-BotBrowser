@@ -495,6 +495,23 @@
     font-size: 1em;
 }
 
+/* Loading indicator for API fetches */
+.bot-browser-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1em;
+    gap: 15px;
+}
+
+.bot-browser-loading i {
+    font-size: 2em;
+    color: rgba(100, 200, 255, 0.8);
+}
+
 .bot-browser-live-indicator {
     display: flex;
     align-items: center;

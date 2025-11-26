@@ -3,7 +3,7 @@ import { debounce, escapeHTML } from './utils/utils.js';
 import { createBrowserHeader, createCardGrid, createCardHTML, createBottomActions } from './templates/templates.js';
 import { getAllTags, getAllCreators, filterCards, sortCards, deduplicateCards, validateCardImages, isApiLevelSort } from './services/cards.js';
 import { loadPersistentSearch, savePersistentSearch, loadSearchCollapsed, saveSearchCollapsed } from './storage/storage.js';
-import { fetchChubCards } from './services/chubApi.js';
+import { fetchChubCards, isChubApiSort } from './services/chubApi.js';
 
 export function createCardBrowser(serviceName, cards, state, extensionName, extension_settings, showCardDetailFunc) {
     console.log('[Bot Browser DEBUG v2] createCardBrowser START - serviceName:', serviceName);
@@ -413,18 +413,95 @@ function setupCustomDropdown(container, state, filterType, extensionName, extens
         } else if (filterType === 'sort') {
             state.sortBy = value;
 
-            // Save and refresh
+            // Save persistent search
             savePersistentSearch(extensionName, extension_settings, state.currentService, state.filters, state.sortBy);
-            refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
 
             // Close dropdown for single select
             dropdown.classList.remove('open');
+
+            // Check if this is a Chub API sort that needs to refetch data
+            if (state.currentService === 'chub' && isChubApiSort(value)) {
+                console.log('[Bot Browser] Fetching Chub cards with API sort:', value);
+                handleChubApiSort(state, value, extensionName, extension_settings, showCardDetailFunc);
+            } else {
+                // Regular local sort
+                refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+            }
         }
     });
 }
 
 
 
+
+// Handle Chub API-level sorting by fetching new data
+async function handleChubApiSort(state, sortBy, extensionName, extension_settings, showCardDetailFunc) {
+    const menuContent = document.querySelector('.bot-browser-content');
+    const countContainer = document.querySelector('.bot-browser-results-count');
+    const gridContainer = menuContent?.querySelector('.bot-browser-card-grid');
+
+    // Show loading state
+    if (countContainer) {
+        countContainer.textContent = 'Loading...';
+    }
+    if (gridContainer) {
+        gridContainer.innerHTML = '<div class="bot-browser-loading"><i class="fa-solid fa-spinner fa-spin"></i> Fetching cards from Chub API...</div>';
+    }
+
+    try {
+        // Fetch cards from Chub API with the specified sort
+        const hideNsfw = extension_settings[extensionName].hideNsfw || false;
+        const result = await fetchChubCards({
+            sort: sortBy,
+            first: 500, // Fetch a good number of cards
+            nsfw: !hideNsfw
+        });
+
+        console.log(`[Bot Browser] Fetched ${result.cards.length} cards from Chub API with sort: ${sortBy}`);
+
+        // Update state with new cards
+        const cardsWithSource = result.cards.map(card => ({
+            ...card,
+            sourceService: 'chub'
+        }));
+        state.currentCards = deduplicateCards(cardsWithSource);
+
+        // Rebuild Fuse.js index for the new cards
+        const fuseOptions = {
+            keys: [
+                { name: 'name', weight: 3 },
+                { name: 'creator', weight: 2 },
+                { name: 'desc_search', weight: 1.5 },
+                { name: 'desc_preview', weight: 1 },
+                { name: 'tags', weight: 1.5 }
+            ],
+            threshold: extension_settings[extensionName].fuzzySearchThreshold || 0.4,
+            distance: 100,
+            minMatchCharLength: 2,
+            ignoreLocation: true,
+            useExtendedSearch: true
+        };
+        state.fuse = new Fuse(state.currentCards, fuseOptions);
+
+        // Now refresh the grid with the new data
+        refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+
+        // Update the filter dropdowns with new tags/creators
+        const allTags = getAllTags(state.currentCards);
+        const allCreators = getAllCreators(state.currentCards);
+        if (menuContent) {
+            updateFilterDropdowns(menuContent, allTags, allCreators, state);
+        }
+
+        toastr.success(`Loaded ${result.cards.length} cards sorted by ${sortBy}`);
+    } catch (error) {
+        console.error('[Bot Browser] Error fetching from Chub API:', error);
+        toastr.error('Failed to fetch cards from Chub API. Using cached data.');
+
+        // Fall back to local sort
+        refreshCardGrid(state, extensionName, extension_settings, showCardDetailFunc);
+    }
+}
 
 function renderPage(state, menuContent, showCardDetailFunc, extensionName, extension_settings) {
     const gridContainer = menuContent.querySelector('.bot-browser-card-grid');
