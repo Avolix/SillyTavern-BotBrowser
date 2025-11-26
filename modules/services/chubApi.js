@@ -70,8 +70,12 @@ export async function fetchChubCards(options = {}) {
         };
         
         // Add authentication token if available
+        // Chub uses CH-API-KEY header for API key authentication
         const token = getChubToken();
         if (token) {
+            // Try CH-API-KEY header (Chub's API key format)
+            headers['CH-API-KEY'] = token;
+            // Also try Authorization header as fallback
             headers['Authorization'] = `Bearer ${token}`;
             console.log('[Bot Browser] Fetching from Chub API (authenticated):', url);
         } else {

@@ -552,14 +552,18 @@ function showSettingsModal() {
                 <div style="margin-bottom: 15px; padding: 12px; background: rgba(100, 150, 255, 0.1); border: 1px solid rgba(100, 150, 255, 0.3); border-radius: 6px;">
                     <small style="color: rgba(200, 220, 255, 0.9); display: block; line-height: 1.5;">
                         <i class="fa-solid fa-info-circle" style="margin-right: 5px;"></i>
-                        <strong>About Chub API Token:</strong><br>
-                        Adding your Chub API token allows you to access NSFW content in trending/recent sorts (when logged in, Chub shows more results).
+                        <strong>About Chub API Key:</strong><br>
+                        Adding your Chub API key allows you to access NSFW content in trending/recent sorts.
                         <br><br>
-                        To get your token:<br>
+                        To get your API key:<br>
                         1. Log in to <a href="https://chub.ai" target="_blank" style="color: rgba(150, 200, 255, 1);">chub.ai</a><br>
-                        2. Open browser DevTools (F12)<br>
-                        3. Go to Application → Cookies → chub.ai<br>
-                        4. Copy the value of the <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">__Secure-next-auth.session-token</code> cookie
+                        2. Go to your <a href="https://chub.ai/account" target="_blank" style="color: rgba(150, 200, 255, 1);">Account Settings</a><br>
+                        3. Look for "API Key" section and generate/copy your key<br>
+                        <br>
+                        <strong>Alternative (browser cookie):</strong><br>
+                        If no API key option exists, you can use your session token:<br>
+                        • DevTools (F12) → Storage/Application → Cookies → chub.ai<br>
+                        • Look for cookies like <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">token</code>, <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">session</code>, or <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">jwt</code>
                     </small>
                 </div>
 
