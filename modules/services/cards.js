@@ -32,12 +32,59 @@ export function sortCards(cards, sortBy) {
             return sorted.sort((a, b) => (a.creator || '').localeCompare(b.creator || ''));
         case 'creator_desc':
             return sorted.sort((a, b) => (b.creator || '').localeCompare(a.creator || ''));
+        // Chub API sort options - cards already sorted by API, preserve order
+        case 'recent':
+        case 'trending':
+        case 'rating':
+        case 'stars':
+        case 'downloads':
+        case 'favorites':
+        case 'newcomer':
+        case 'activity':
+        case 'default':
+            // These are API-level sorts - cards come pre-sorted from API
+            // For non-Chub sources, fall back to keeping original order
+            return sorted;
         case 'relevance':
         default:
             // If using search, Fuse.js already sorted by relevance
             // Otherwise, keep original order
             return sorted;
     }
+}
+
+// Get all available sort options
+export function getAllSortOptions(isChubSource = false) {
+    const baseOptions = [
+        { value: 'relevance', label: 'Relevance' },
+        { value: 'name_asc', label: 'Name (A-Z)' },
+        { value: 'name_desc', label: 'Name (Z-A)' },
+        { value: 'creator_asc', label: 'Creator (A-Z)' },
+        { value: 'creator_desc', label: 'Creator (Z-A)' }
+    ];
+
+    if (isChubSource) {
+        // Add Chub-specific API sort options
+        return [
+            ...baseOptions,
+            { value: 'recent', label: '🕐 Recent' },
+            { value: 'trending', label: '🔥 Trending' },
+            { value: 'rating', label: '⭐ Top Rated' },
+            { value: 'stars', label: '✨ Most Stars' },
+            { value: 'downloads', label: '📥 Most Downloads' },
+            { value: 'favorites', label: '❤️ Most Favorites' },
+            { value: 'newcomer', label: '🆕 Newcomers' },
+            { value: 'activity', label: '📅 Recently Active' }
+        ];
+    }
+
+    return baseOptions;
+}
+
+// Check if a sort option requires API-level sorting (Chub only)
+export function isApiLevelSort(sortBy) {
+    const apiSorts = ['recent', 'trending', 'rating', 'stars', 'downloads', 'favorites', 'newcomer', 'activity', 'default'];
+    return apiSorts.includes(sortBy);
 }
 
 // Filter cards based on current filter state

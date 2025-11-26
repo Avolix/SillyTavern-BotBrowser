@@ -122,13 +122,49 @@ export function getOriginalMenuHTML(recentlyViewed) {
     `;
 }
 
-export function createBrowserHeader(serviceDisplayName, searchValue, cardCountText, searchCollapsed = false, hideNsfw = false) {
+export function createBrowserHeader(serviceDisplayName, searchValue, cardCountText, searchCollapsed = false, hideNsfw = false, isChubSource = false, currentSort = 'relevance') {
+    // Build sort options based on source
+    const baseSortOptions = [
+        { value: 'relevance', label: 'Relevance' },
+        { value: 'name_asc', label: 'Name (A-Z)' },
+        { value: 'name_desc', label: 'Name (Z-A)' },
+        { value: 'creator_asc', label: 'Creator (A-Z)' },
+        { value: 'creator_desc', label: 'Creator (Z-A)' }
+    ];
+
+    const chubSortOptions = [
+        { value: 'recent', label: '🕐 Recent' },
+        { value: 'trending', label: '🔥 Trending' },
+        { value: 'rating', label: '⭐ Top Rated' },
+        { value: 'stars', label: '✨ Most Stars' },
+        { value: 'downloads', label: '📥 Most Downloads' },
+        { value: 'favorites', label: '❤️ Most Favorites' },
+        { value: 'newcomer', label: '🆕 Newcomers' },
+        { value: 'activity', label: '📅 Recently Active' }
+    ];
+
+    const allSortOptions = isChubSource 
+        ? [...baseSortOptions, ...chubSortOptions]
+        : baseSortOptions;
+
+    const sortOptionsHTML = allSortOptions.map(opt => `
+        <div class="bot-browser-multi-select-option${currentSort === opt.value ? ' selected' : ''}" data-value="${opt.value}">
+            <i class="fa-solid fa-check"></i>
+            <span>${opt.label}</span>
+        </div>
+    `).join('');
+
+    // Get current sort label
+    const currentSortOption = allSortOptions.find(opt => opt.value === currentSort);
+    const currentSortLabel = currentSortOption ? currentSortOption.label : 'Relevance';
+
     return `
         <div class="bot-browser-header-bar">
             <button class="bot-browser-back-button">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h3>${serviceDisplayName}</h3>
+            ${isChubSource ? '<div class="bot-browser-live-indicator" title="Using live Chub API for sorting"><i class="fa-solid fa-bolt"></i> Live</div>' : ''}
             ${hideNsfw ? '<div class="bot-browser-nsfw-indicator" title="NSFW cards are hidden (change in settings)"><i class="fa-solid fa-eye-slash"></i> NSFW Hidden</div>' : ''}
             <button class="bot-browser-toggle-search" title="Toggle Search">
                 <i class="fa-solid fa-chevron-${searchCollapsed ? 'down' : 'up'}"></i>
@@ -183,33 +219,14 @@ export function createBrowserHeader(serviceDisplayName, searchValue, cardCountTe
 
                 <div class="bot-browser-filter-group">
                     <label>Sort by:</label>
-                    <div class="bot-browser-multi-select bot-browser-sort-dropdown" id="bot-browser-sort-filter">
+                    <div class="bot-browser-multi-select bot-browser-sort-dropdown" id="bot-browser-sort-filter" data-is-chub="${isChubSource}">
                         <div class="bot-browser-multi-select-trigger">
-                            <span class="selected-text">Relevance</span>
+                            <span class="selected-text">${escapeHTML(currentSortLabel)}</span>
                             <i class="fa-solid fa-chevron-down"></i>
                         </div>
                         <div class="bot-browser-multi-select-dropdown">
                             <div class="bot-browser-multi-select-options">
-                                <div class="bot-browser-multi-select-option selected" data-value="relevance">
-                                    <i class="fa-solid fa-check"></i>
-                                    <span>Relevance</span>
-                                </div>
-                                <div class="bot-browser-multi-select-option" data-value="name_asc">
-                                    <i class="fa-solid fa-check"></i>
-                                    <span>Name (A-Z)</span>
-                                </div>
-                                <div class="bot-browser-multi-select-option" data-value="name_desc">
-                                    <i class="fa-solid fa-check"></i>
-                                    <span>Name (Z-A)</span>
-                                </div>
-                                <div class="bot-browser-multi-select-option" data-value="creator_asc">
-                                    <i class="fa-solid fa-check"></i>
-                                    <span>Creator (A-Z)</span>
-                                </div>
-                                <div class="bot-browser-multi-select-option" data-value="creator_desc">
-                                    <i class="fa-solid fa-check"></i>
-                                    <span>Creator (Z-A)</span>
-                                </div>
+                                ${sortOptionsHTML}
                             </div>
                         </div>
                     </div>

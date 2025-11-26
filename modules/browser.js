@@ -1,8 +1,9 @@
 import { Fuse } from '../../../../../lib.js';
 import { debounce, escapeHTML } from './utils/utils.js';
 import { createBrowserHeader, createCardGrid, createCardHTML, createBottomActions } from './templates/templates.js';
-import { getAllTags, getAllCreators, filterCards, sortCards, deduplicateCards, validateCardImages } from './services/cards.js';
+import { getAllTags, getAllCreators, filterCards, sortCards, deduplicateCards, validateCardImages, isApiLevelSort } from './services/cards.js';
 import { loadPersistentSearch, savePersistentSearch, loadSearchCollapsed, saveSearchCollapsed } from './storage/storage.js';
+import { fetchChubCards } from './services/chubApi.js';
 
 export function createCardBrowser(serviceName, cards, state, extensionName, extension_settings, showCardDetailFunc) {
     state.view = 'browser';
@@ -74,7 +75,8 @@ export function createCardBrowser(serviceName, cards, state, extensionName, exte
     const hideNsfw = extension_settings[extensionName].hideNsfw || false;
     const nsfwText = hideNsfw ? ' (after hiding NSFW)' : '';
     const cardCountText = `${cardsWithImages.length} card${cardsWithImages.length !== 1 ? 's' : ''} found${nsfwText}`;
-    menuContent.innerHTML = createBrowserHeader(serviceDisplayName, state.filters.search, cardCountText, searchCollapsed, hideNsfw);
+    const isChubSource = serviceName === 'chub';
+    menuContent.innerHTML = createBrowserHeader(serviceDisplayName, state.filters.search, cardCountText, searchCollapsed, hideNsfw, isChubSource, state.sortBy);
 
     // Update filter dropdowns
     updateFilterDropdowns(menuContent, allTags, allCreators, state);
@@ -633,13 +635,22 @@ function updateFilterUI(menuContent, state) {
         const sortTriggerText = sortFilterContainer.querySelector('.selected-text');
         const sortOptions = sortFilterContainer.querySelectorAll('.bot-browser-multi-select-option');
 
-        // Map values to display names
+        // Map values to display names (include Chub-specific options)
         const sortLabels = {
             'relevance': 'Relevance',
             'name_asc': 'Name (A-Z)',
             'name_desc': 'Name (Z-A)',
             'creator_asc': 'Creator (A-Z)',
-            'creator_desc': 'Creator (Z-A)'
+            'creator_desc': 'Creator (Z-A)',
+            // Chub API sort options
+            'recent': '🕐 Recent',
+            'trending': '🔥 Trending',
+            'rating': '⭐ Top Rated',
+            'stars': '✨ Most Stars',
+            'downloads': '📥 Most Downloads',
+            'favorites': '❤️ Most Favorites',
+            'newcomer': '🆕 Newcomers',
+            'activity': '📅 Recently Active'
         };
 
         if (sortTriggerText) {

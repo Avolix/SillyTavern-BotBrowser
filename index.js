@@ -5,7 +5,8 @@ import { eventSource, event_types, saveSettingsDebounced, processDroppedFiles, g
 import { loadImportStats, saveImportStats, loadRecentlyViewed } from './modules/storage/storage.js';
 import { getTimeAgo } from './modules/storage/stats.js';
 import { loadServiceIndex, initializeServiceCache } from './modules/services/cache.js';
-import { getRandomCard } from './modules/services/cards.js';
+import { getRandomCard, isApiLevelSort } from './modules/services/cards.js';
+import { fetchChubCards } from './modules/services/chubApi.js';
 import { importCardToSillyTavern } from './modules/services/import.js';
 import { showCardDetail, closeDetailModal, showImageLightbox } from './modules/modals/detail.js';
 import { createCardBrowser, refreshCardGrid } from './modules/browser.js';
