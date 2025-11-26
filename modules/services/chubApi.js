@@ -59,7 +59,7 @@ export async function fetchChubCards(options = {}) {
             params.append('cursor', cursor);
         }
 
-        // NSFW content parameters - comprehensive approach
+        // NSFW/NSFL content parameters - comprehensive approach
         // Chub has multiple NSFW-related flags that need to be set properly
         if (nsfw) {
             // Venus is Chub's NSFW platform
@@ -67,19 +67,26 @@ export async function fetchChubCards(options = {}) {
             // Standard NSFW flags
             params.append('nsfw', 'true');
             params.append('nsfw_ok', 'true');
-            // Additional flags to ensure NSFW content is included
+            // NSFL (Not Safe For Life) content - gore, extreme content
+            params.append('nsfl', 'true');
+            params.append('nsfl_ok', 'true');
+            // Additional flags to ensure all content is included
             params.append('require_images', 'false');
             params.append('require_custom_prompt', 'false');
             params.append('require_lore', 'false');
             params.append('require_expressions', 'false');
-            // Don't exclude NSFW
+            // Don't exclude any content
             params.append('exclude_venus', 'false');
-            // Include all ratings
+            params.append('exclude_nsfl', 'false');
+            // Include all ratings/content levels
             params.append('asc', 'false');
+            params.append('min_venus_rating', '0');
         } else {
             params.append('venus', 'false');
             params.append('nsfw', 'false');
+            params.append('nsfl', 'false');
             params.append('exclude_venus', 'true');
+            params.append('exclude_nsfl', 'true');
         }
 
         const url = `${CHUB_API_BASE}/search?${params.toString()}`;
