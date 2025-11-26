@@ -52,7 +52,7 @@ export async function importCardToSillyTavern(card, extensionName, extension_set
 }
 
 // Import Chub character using importURL endpoint
-async function importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders) {
+async function importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders, processDroppedFiles) {
     console.log('[Bot Browser] Importing Chub character via importURL:', card.id);
 
     const request = await fetch('/api/content/importURL', {
@@ -67,12 +67,25 @@ async function importChubCharacter(card, extensionName, extension_settings, impo
         throw new Error(`Failed to import character: ${request.statusText}`);
     }
 
-    const result = await request.json();
+    // The endpoint returns a binary file (PNG with embedded character data)
+    const characterBlob = await request.blob();
     
-    if (result.error) {
-        console.error('[Bot Browser] Import error:', result.error);
-        throw new Error(`Server returned an error: ${result.error}`);
+    // Check if we got an error response instead of a file
+    if (characterBlob.size < 100) {
+        const text = await characterBlob.text();
+        if (text.includes('error')) {
+            console.error('[Bot Browser] Import error response:', text);
+            throw new Error('Failed to download character from Chub');
+        }
     }
+
+    console.log('[Bot Browser] Downloaded character file:', characterBlob.size, 'bytes');
+
+    // Create a file and import it
+    const fileName = card.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
+    const file = new File([characterBlob], fileName, { type: 'image/png' });
+    
+    await processDroppedFiles([file]);
 
     toastr.success(`${card.name} imported successfully!`, '', { timeOut: 2000 });
     console.log('[Bot Browser] ✓ Chub character imported via importURL');
@@ -118,7 +131,7 @@ async function importCharacter(card, extensionName, extension_settings, importSt
     // For Chub cards (from API), use the importURL endpoint
     if ((card.service === 'chub' || card.sourceService === 'chub') && card.id && card.id.includes('chub.ai/characters/')) {
         console.log('[Bot Browser] Using importURL for Chub character:', card.id);
-        return await importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders);
+        return await importChubCharacter(card, extensionName, extension_settings, importStats, getRequestHeaders, processDroppedFiles);
     }
 
     // Determine which URL to use based on service
