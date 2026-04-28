@@ -1,6 +1,21 @@
 import { default_avatar } from '../../../../../../script.js';
 
-const baseUrl = 'https://raw.githubusercontent.com/mia13165/updated_cards/refs/heads/main';
+// SECURITY: the upstream `mia13165/updated_cards` repo is the carrier in the
+// SillyTavern-BotBrowser backdoor (rentry.co/st-backdoor) — every fetched JSON
+// field is rendered into the detail modal. Point this at a repo you control
+// (a forked + audited copy of updated_cards). Fetches are skipped if it still
+// resolves to mia13165's repo.
+const baseUrl = 'https://raw.githubusercontent.com/MeowCatboyMeow/updated_cards/refs/heads/main';
+
+const BLOCKED_HOSTS = ['mia13165/updated_cards'];
+
+function isBlockedSource(url) {
+    return BLOCKED_HOSTS.some(needle => url.includes(needle));
+}
+
+if (isBlockedSource(baseUrl)) {
+    console.error('[Bot Browser] Refusing to load: baseUrl points at the known-malicious mia13165/updated_cards repo. Set baseUrl to a repo you control.');
+}
 
 // Storage for loaded data
 const loadedData = {
@@ -10,6 +25,7 @@ const loadedData = {
 };
 
 export async function loadMasterIndex() {
+    if (isBlockedSource(baseUrl)) return null;
     try {
         const response = await fetch(`${baseUrl}/index/master-index.json`);
         if (!response.ok) throw new Error('Failed to load master index');
@@ -27,6 +43,10 @@ export async function loadServiceIndex(serviceName) {
         return loadedData.serviceIndexes[serviceName];
     }
 
+    if (isBlockedSource(baseUrl)) {
+        loadedData.serviceIndexes[serviceName] = [];
+        return [];
+    }
     try {
         const response = await fetch(`${baseUrl}/index/${serviceName}-search.json`);
         if (!response.ok) {
@@ -65,6 +85,7 @@ export async function loadCardChunk(service, chunkFile) {
         return loadedData.loadedChunks[chunkKey];
     }
 
+    if (isBlockedSource(baseUrl)) return [];
     try {
         const response = await fetch(`${baseUrl}/chunks/${service}/${chunkFile}`);
         if (!response.ok) throw new Error(`Failed to load chunk ${chunkKey}`);
