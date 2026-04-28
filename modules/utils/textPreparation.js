@@ -1,5 +1,15 @@
 import { escapeHTML } from './utils.js';
 
+function escapeMetadata(metadata) {
+    if (!metadata) return '';
+    if (typeof metadata === 'string') return escapeHTML(metadata);
+    try {
+        return escapeHTML(JSON.stringify(metadata, null, 2));
+    } catch {
+        return escapeHTML('[unserializable metadata]');
+    }
+}
+
 export function escapeCardTextFields(fullCard, tags, alternateGreetings, exampleMessages) {
     return {
         cardName: escapeHTML(fullCard.name),
@@ -14,6 +24,7 @@ export function escapeCardTextFields(fullCard, tags, alternateGreetings, example
         tags: tags.map(tag => escapeHTML(tag)),
         creator: escapeHTML(fullCard.creator || ''),
         alternateGreetings: alternateGreetings.map(greeting => escapeHTML(greeting)),
+        metadata: escapeMetadata(fullCard.metadata),
     };
 }
 

@@ -14,7 +14,6 @@ export function extractCardProperties(fullCard) {
         tags,
         alternateGreetings,
         exampleMessages,
-        metadata: fullCard.metadata || null,
         id: fullCard.id || null,
         service: fullCard.service || null,
         possibleNsfw: fullCard.possibleNsfw || false
