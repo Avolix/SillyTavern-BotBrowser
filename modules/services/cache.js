@@ -5,7 +5,7 @@ import { default_avatar } from '../../../../../../script.js';
 // field is rendered into the detail modal. Point this at a repo you control
 // (a forked + audited copy of updated_cards). Fetches are skipped if it still
 // resolves to mia13165's repo.
-const baseUrl = 'https://raw.githubusercontent.com/Avolix/updated_cards/refs/heads/main';
+const baseUrl = 'https://raw.githubusercontent.com/MeowCatboyMeow/updated_cards/refs/heads/main';
 
 const BLOCKED_HOSTS = ['mia13165/updated_cards'];
 
