@@ -15,10 +15,11 @@ export function createCardHTML(card) {
     const tags = card.tags || [];
     const cardName = escapeHTML(card.name);
     const cardCreator = escapeHTML(card.creator || 'Unknown');
+    const cardId = escapeHTML(card.id || '');
     const isNsfw = card.possibleNsfw ? 'true' : 'false';
 
     return `
-        <div class="bot-browser-card-thumbnail" data-card-id="${card.id}" data-nsfw="${isNsfw}">
+        <div class="bot-browser-card-thumbnail" data-card-id="${cardId}" data-nsfw="${isNsfw}">
             <div class="bot-browser-card-image" style="background-image: url('${safeImageUrl}');">
                 ${!safeImageUrl ? '<i class="fa-solid fa-user"></i>' : ''}
             </div>
@@ -56,7 +57,7 @@ export function getOriginalMenuHTML(recentlyViewed) {
                 <h4><i class="fa-solid fa-clock-rotate-left"></i> Recently Viewed</h4>
                 <div class="bot-browser-recently-viewed-grid">
                     ${recentlyViewed.map(card => `
-                        <div class="bot-browser-recent-card" data-card-id="${card.id}" data-nsfw="${card.possibleNsfw ? 'true' : 'false'}">
+                        <div class="bot-browser-recent-card" data-card-id="${escapeHTML(card.id || '')}" data-nsfw="${card.possibleNsfw ? 'true' : 'false'}">
                             <div class="bot-browser-recent-image" style="background-image: url('${sanitizeImageUrl(card.avatar_url || '')}');"></div>
                             <div class="bot-browser-recent-name">${escapeHTML(card.name)}</div>
                         </div>

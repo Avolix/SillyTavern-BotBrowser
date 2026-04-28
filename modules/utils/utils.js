@@ -74,6 +74,16 @@ export function sanitizeImageUrl(url) {
             }
         }
 
+        // Percent-encode quotes and parens so the URL can never break out of an
+        // HTML attribute *or* a CSS url('…') / url("…") string. escapeHTML alone
+        // is insufficient: the HTML parser decodes &#039; back to ' before CSS
+        // sees the value, allowing CSS-string escape from style="… url('…') …".
+        trimmed = trimmed
+            .replace(/'/g, '%27')
+            .replace(/"/g, '%22')
+            .replace(/\(/g, '%28')
+            .replace(/\)/g, '%29');
+
         // Escape HTML entities to prevent attribute injection
         return escapeHTML(trimmed);
     }

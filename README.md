@@ -9,7 +9,7 @@ Browse character bots and lorebooks from various sources directly in SillyTavern
 Install via the SillyTavern extension installer:
 
 ```
-https://github.com/mia13165/SillyTavern-BotBrowser
+https://github.com/MeowCatboyMeow/SillyTavern-BotBrowser
 ```
 
 ## How to Use
