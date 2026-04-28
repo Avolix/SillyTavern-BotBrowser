@@ -1,4 +1,4 @@
-import { sanitizeImageUrl } from '../utils/utils.js';
+import { sanitizeImageUrl, escapeHTML } from '../utils/utils.js';
 
 export function buildDetailModalHTML(cardName, imageUrl, isLorebook, cardCreator, tags, creator, websiteDesc, description, descPreview, personality, scenario, firstMessage, alternateGreetings, exampleMsg, entries, entriesCount, metadata) {
     const safeImageUrl = sanitizeImageUrl(imageUrl);
@@ -105,11 +105,14 @@ function buildDetailSections(isLorebook, cardCreator, tags, creator, websiteDesc
     }
 
     if (metadata) {
+        const safeMetadata = typeof metadata === 'string'
+            ? escapeHTML(metadata)
+            : escapeHTML(JSON.stringify(metadata, null, 2));
         html += `
                 <div class="bot-browser-detail-section">
                     <h4>Metadata</h4>
                     <div class="bot-browser-detail-metadata">
-                        ${metadata}
+                        ${safeMetadata}
                     </div>
                 </div>`;
     }
